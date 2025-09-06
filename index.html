@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>XeinStore - Digital Game Codes</title>
+<style>
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height:100vh; color:#222; }
+.header { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding:1rem 0; box-shadow:0 2px 20px rgba(0,0,0,0.1); position:sticky; top:0; z-index:100; }
+.nav { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; padding:0 2rem; }
+.logo { font-size:1.6rem; font-weight:700; background:linear-gradient(45deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.cart-btn { background:#667eea; color:#fff; border:none; padding:.6rem 1rem; border-radius:20px; cursor:pointer; font-weight:600; display:flex; gap:.5rem; align-items:center;}
+.cart-count { background:#ff4757; color:white; border-radius:50%; padding:.15rem .45rem; font-size:.8rem; }
+.container { max-width:1200px; margin:1.5rem auto; padding:1rem; }
+.hero { text-align:center; color:white; margin-bottom:1.5rem; }
+.hero h1 { font-size:2.4rem; text-shadow:2px 2px 4px rgba(0,0,0,0.25); margin-bottom:.3rem; }
+.note-box { background: rgba(255,255,255,0.9); color:#222; padding:1rem; border-radius:8px; max-width:600px; margin:0 auto 1rem auto; font-weight:600; }
+.products-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:1.25rem; }
+.product-card { background: rgba(255,255,255,0.95); border-radius:12px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.08); transition:transform .18s; }
+.product-card:hover { transform: translateY(-6px); }
+.product-image { height:150px; display:flex; align-items:center; justify-content:center; font-size:3rem; color:white; background: linear-gradient(45deg,#667eea,#764ba2); }
+.product-info { padding:1rem; }
+.product-title { font-weight:700; color:#2d3748; margin-bottom:.35rem; }
+.product-platform { color:#667eea; margin-bottom:.6rem; }
+.duration-selector select { width:100%; padding:.45rem; border-radius:6px; border:1px solid #e6eef8; margin-bottom:.5rem; }
+.duration-price { color:#667eea; font-weight:700; margin-bottom:.6rem; }
+.add-to-cart { width:100%; padding:.6rem; border-radius:8px; background:#667eea; color:white; border:none; cursor:pointer; font-weight:700; }
+/* cart sidebar */
+.cart-sidebar { position: fixed; right: -100%; top: 0; width:420px; height: 100vh; background: white; box-shadow: -5px 0 20px rgba(0,0,0,.12); transition: right .28s; z-index:900; overflow-y:auto; }
+.cart-sidebar.open { right: 0; }
+.cart-header { padding:1rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+.close-cart { background:none; border:none; font-size:1.3rem; cursor:pointer; }
+.cart-items { padding:1rem; }
+.cart-item { display:flex; justify-content:space-between; gap:10px; padding:.75rem 0; border-bottom:1px solid #f1f3f5; align-items:center; }
+.cart-total { padding:1rem; border-top:2px solid #eee; font-weight:800; font-size:1.05rem; }
+.checkout-btn { width:100%; padding:1rem; border-radius:10px; background:#00d4aa; color:white; border:none; font-weight:800; cursor:pointer; margin-top:.8rem; }
+/* recent purchases */
+.recent-notification { position: fixed; left: 20px; bottom: 20px; background: rgba(0,0,0,0.8); color: #fff; padding: .8rem 1rem; border-radius: 6px; font-size:.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display:none; }
+@media (max-width:900px) {
+    .cart-sidebar { width:100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">🎮 XeinStore</div>
+        <div style="display:flex; gap:.6rem; align-items:center;">
+            <button class="cart-btn" onclick="toggleCart()">Cart <span class="cart-count" id="cart-count">0</span></button>
+        </div>
+    </nav>
+</header>
+
+<main class="container">
+    <div class="hero">
+        <h1>Digital Game Codes</h1>
+        <div class="note-box">
+            NOTE: Please be reminded to screenshot your crypto payment
+        </div>
+    </div>
+
+    <div class="products-grid" id="products-grid"></div>
+</main>
+
+<!-- Cart sidebar -->
+<aside class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+        <h3>Shopping Cart</h3>
+        <button class="close-cart" onclick="toggleCart()">×</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+        <p style="text-align:center; color:#666; padding:2rem;">Your cart is empty</p>
+    </div>
+    <div class="cart-total" id="cart-total" style="display:none;">Total: $0.00</div>
+    <div style="padding:1rem;">
+        <button id="checkout-btn" class="checkout-btn" style="display:none;" onclick="goToCheckout()">Checkout</button>
+    </div>
+</aside>
+
+<!-- Recent purchase notification -->
+<div class="recent-notification" id="recent-notification"></div>
+
+<script>
+// Products setup
+const products = [
+    { id:1, title:"Xein Pubg Key", platform:"Digital Key", pricing:{"1_day":5.00,"3_days":8.00,"7_days":12.00,"30_days":23.00}, icon:"🎯" },
+    { id:2, title:"Xein Delta Force Key", platform:"Digital Key", pricing:{"1_day":4.00,"3_days":7.00,"7_days":11.00,"30_days":22.00}, icon:"⚡" }
+];
+let cart = [];
+
+function renderProducts() {
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = '';
+    products.forEach(product => {
+        let optionsHTML = '';
+        for (const [key,value] of Object.entries(product.pricing)) {
+            const label = key.replace(/_/g,' ').replace(/\b\w/g,l => l.toUpperCase());
+            optionsHTML += `<option value="${key}">${label} - $${value}</option>`;
+        }
+        const card = document.createElement('div');
+        card.className='product-card';
+        card.innerHTML = `
+            <div class="product-image">${product.icon}</div>
+            <div class="product-info">
+                <div class="product-title">${product.title}</div>
+                <div class="product-platform">${product.platform}</div>
+                <div class="duration-selector">
+                    <select id="duration-${product.id}" onchange="updatePrice(${product.id})">${optionsHTML}</select>
+                    <div class="duration-price" id="price-${product.id}">$${product.pricing["1_day"]} USDT</div>
+                </div>
+                <button class="add-to-cart" onclick="addToCart(${product.id})">Add to Cart</button>
+            </div>`;
+        grid.appendChild(card);
+    });
+}
+
+function updatePrice(productId){
+    const select = document.getElementById(`duration-${productId}`);
+    const priceDisplay = document.getElementById(`price-${productId}`);
+    const product = products.find(p=>p.id===productId);
+    priceDisplay.textContent=`$${product.pricing[select.value]} USDT`;
+}
+
+// Cart toggle
+function toggleCart(){ document.getElementById('cart-sidebar').classList.toggle('open'); }
+
+// Placeholder for checkout navigation
+function goToCheckout(){ alert('Proceeding to checkout page...'); }
+
+document.addEventListener('DOMContentLoaded',()=>{
+    renderProducts();
+});
+</script>
+</body>
+</html>
+<script>
+// Add to cart
+function addToCart(productId){
+    const product = products.find(p=>p.id===productId);
+    const select = document.getElementById(`duration-${productId}`);
+    const duration = select.value;
+    const price = product.pricing[duration];
+    const cartItemIndex = cart.findIndex(c=>c.id===productId && c.duration===duration);
+    if(cartItemIndex > -1){
+        cart[cartItemIndex].quantity++;
+    } else {
+        cart.push({ id:productId, title:product.title, duration:duration, price:price, quantity:1 });
+    }
+    updateCart();
+    showRecentPurchase();
+}
+
+// Update cart display
+function updateCart(){
+    const cartItemsContainer = document.getElementById('cart-items');
+    cartItemsContainer.innerHTML='';
+    if(cart.length===0){
+        cartItemsContainer.innerHTML='<p style="text-align:center; color:#666; padding:2rem;">Your cart is empty</p>';
+        document.getElementById('cart-total').style.display='none';
+        document.getElementById('checkout-btn').style.display='none';
+        document.getElementById('cart-count').textContent='0';
+        return;
+    }
+    let total=0;
+    cart.forEach((item,index)=>{
+        total += item.price*item.quantity;
+        const itemDiv = document.createElement('div');
+        itemDiv.className='cart-item';
+        itemDiv.innerHTML = `
+            <div>
+                <strong>${item.title}</strong><br/>
+                ${item.duration.replace(/_/g,' ')} <br/>
+                $${item.price} x 
+                <input type="number" min="1" value="${item.quantity}" style="width:40px" onchange="updateQuantity(${index},this.value)">
+            </div>
+            <button onclick="removeItem(${index})" style="background:none;border:none;color:#ff4757;cursor:pointer;">×</button>
+        `;
+        cartItemsContainer.appendChild(itemDiv);
+    });
+    document.getElementById('cart-total').style.display='block';
+    document.getElementById('cart-total').textContent=`Total: $${total.toFixed(2)} USDT`;
+    document.getElementById('checkout-btn').style.display='block';
+    document.getElementById('cart-count').textContent=cart.length;
+}
+
+function updateQuantity(index,value){
+    const qty = parseInt(value);
+    if(qty<1) return;
+    cart[index].quantity=qty;
+    updateCart();
+}
+
+function removeItem(index){
+    cart.splice(index,1);
+    updateCart();
+}
+
+// Checkout
+function goToCheckout(){
+    // hide cart
+    toggleCart();
+    const checkoutHTML = `
+    <div style="padding:2rem; max-width:600px; margin:0 auto; background:white; border-radius:12px; text-align:center;">
+        <h2>Checkout</h2>
+        <p><strong>Wallet Address:</strong> TRON_WALLET_ADDRESS_HERE</p>
+        <div>
+            <h3>Items:</h3>
+            <ul>
+                ${cart.map(i=>`<li>${i.title} (${i.duration.replace(/_/g,' ')}) x ${i.quantity} - $${(i.price*i.quantity).toFixed(2)} USDT</li>`).join('')}
+            </ul>
+        </div>
+        <div style="margin-top:1rem;">
+            <input type="text" id="telegram-username" placeholder="Enter your Telegram username" style="width:100%;padding:.6rem;border-radius:6px;border:1px solid #ccc;margin-bottom:1rem;" />
+            <button style="padding:.8rem 1.2rem;border:none;border-radius:8px;background:#00d4aa;color:white;font-weight:700;" onclick="finishPayment()">I Paid</button>
+        </div>
+    </div>`;
+    document.body.innerHTML=checkoutHTML;
+}
+
+// Receipt page
+function finishPayment(){
+    const username = document.getElementById('telegram-username').value.trim();
+    if(!username){ alert('Please enter your Telegram username'); return; }
+    const orderId = 'ORD' + Math.floor(Math.random()*1000000);
+    let total=0;
+    cart.forEach(i=>total+=i.price*i.quantity);
+    const receiptHTML = `
+    <div style="padding:2rem; max-width:600px; margin:0 auto; background:white; border-radius:12px; text-align:center;">
+        <h2>Receipt</h2>
+        <p><strong>Order ID:</strong> ${orderId}</p>
+        <p><strong>Telegram Username:</strong> ${username}</p>
+        <h3>Items Purchased:</h3>
+        <ul>
+            ${cart.map(i=>`<li>${i.title} (${i.duration.replace(/_/g,' ')}) x ${i.quantity} - $${(i.price*i.quantity).toFixed(2)} USDT</li>`).join('')}
+        </ul>
+        <p><strong>Total Paid:</strong> $${total.toFixed(2)} USDT</p>
+        <div class="note-box" style="margin-top:1rem;">NOTE: Please send BOTH screenshots of your crypto payment and your receipt to @cocomelonqueen</div>
+    </div>`;
+    document.body.innerHTML=receiptHTML;
+}
+
+// Recent purchase notifications
+const fakeUsers = ["GamerKing", "CryptoQueen", "PixelPro", "NoobSlayer", "ProPlayer", "DarkKnight", "ShadowFox", "DragonSlayer"];
+function showRecentPurchase(){
+    const randomUser = fakeUsers[Math.floor(Math.random()*fakeUsers.length)];
+    const randomProduct = products[Math.floor(Math.random()*products.length)];
+    const times = ["5 minutes ago","12 minutes ago","30 minutes ago","1 hour ago","2 hours ago"];
+    const randomTime = times[Math.floor(Math.random()*times.length)];
+    const notification = document.getElementById('recent-notification');
+    notification.textContent=`${randomUser} just bought ${randomProduct.title} (${randomProduct.duration.replace(/_/g,' ')}) ${randomTime}`;
+    notification.style.display='block';
+    setTimeout(()=>{ notification.style.display='none'; }, 8000);
+}
+
+// Auto show random notifications every 15-30s
+setInterval(showRecentPurchase, Math.floor(Math.random()*15000)+15000);
+</script>
